@@ -1,27 +1,19 @@
 package ru.skypro.testbuttonsbot.listener;
 
-import com.pengrad.telegrambot.BotUtils;
+
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
-import com.pengrad.telegrambot.model.File;
-import com.pengrad.telegrambot.model.PhotoSize;
+
 import com.pengrad.telegrambot.model.Update;
-import com.pengrad.telegrambot.request.GetFile;
-import com.pengrad.telegrambot.response.GetFileResponse;
+
 import jakarta.annotation.PostConstruct;
-import org.apache.commons.lang3.ObjectUtils;
+
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-import ru.skypro.testbuttonsbot.model.ImagesFromTG;
+
 import ru.skypro.testbuttonsbot.service.*;
 
-import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 
 @Service
@@ -34,13 +26,14 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     private final SendButtonsService buttonsService;
     private final CreateButtonsService buttonsList;
 
+    private final GetFileService getFileService;
 
-
-    public TelegramBotUpdatesListener(TelegramBot telegramBot, TelegramBotSender telegramBotSender, SendButtonsService buttonsService, CreateButtonsService buttonsList) {
+    public TelegramBotUpdatesListener(TelegramBot telegramBot, TelegramBotSender telegramBotSender, SendButtonsService buttonsService, CreateButtonsService buttonsList, GetFileService getFileService) {
         this.telegramBot = telegramBot;
         this.telegramBotSender = telegramBotSender;
         this.buttonsService = buttonsService;
         this.buttonsList = buttonsList;
+        this.getFileService = getFileService;
     }
 
     @PostConstruct
@@ -62,17 +55,13 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                 } else if (update.message().photo() != null) {
                     Long chatId = update.message().chat().id();
                     String fileId = update.message().photo()[0].fileId();
-                    GetFileResponse getFileResponse = telegramBot.execute(new GetFile(fileId));
-                    File file = getFileResponse.file();
-                    String fileUrl = telegramBot.getFullFilePath(file);
-                    telegramBotSender.send(chatId, fileUrl);
-
-
-
-
-
-
+                    String fileUniqueId = update.message().photo()[0].fileUniqueId();
+                    Long fileSize = update.message().photo()[0].fileSize();
+                    telegramBotSender.send(chatId, String.valueOf(fileSize));
+                    telegramBotSender.send(chatId, getFileService.getFileUrl(fileId));
                 }
+
+
 
             } else if (update.callbackQuery() != null) {
                 String buttonMessage = update.callbackQuery().data();
